@@ -16,15 +16,26 @@ namespace Grocery.App.ViewModels
         private readonly IProductService _productService;
         private readonly IFileSaverService _fileSaverService;
         private string searchText = "";
+
+        [ObservableProperty] private string? selectedCategory;
+        [ObservableProperty] private decimal? maxPrice;
+        [ObservableProperty] private bool onlyInStock;
+        [ObservableProperty]
+        private ObservableCollection<string> categories = new(["Alle", "Zuivel", "Bakkerij", "Conserven", "Overig"]);
+
         public ObservableCollection<GroceryListItem> MyGroceryListItems { get; set; } = [];
         public ObservableCollection<Product> AvailableProducts { get; set; } = [];
 
         [ObservableProperty]
         GroceryList groceryList = new(0, "None", DateOnly.MinValue, "", 0);
+
         [ObservableProperty]
         string myMessage;
 
-        public GroceryListItemsViewModel(IGroceryListItemsService groceryListItemsService, IProductService productService, IFileSaverService fileSaverService)
+        public GroceryListItemsViewModel(
+            IGroceryListItemsService groceryListItemsService,
+            IProductService productService,
+            IFileSaverService fileSaverService)
         {
             _groceryListItemsService = groceryListItemsService;
             _productService = productService;
@@ -35,7 +46,9 @@ namespace Grocery.App.ViewModels
         private void Load(int id)
         {
             MyGroceryListItems.Clear();
-            foreach (var item in _groceryListItemsService.GetAllOnGroceryListId(id)) MyGroceryListItems.Add(item);
+            foreach (var item in _groceryListItemsService.GetAllOnGroceryListId(id))
+                MyGroceryListItems.Add(item);
+
             GetAvailableProducts();
         }
 
@@ -43,8 +56,18 @@ namespace Grocery.App.ViewModels
         {
             AvailableProducts.Clear();
             foreach (Product p in _productService.GetAll())
-                if (MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) == null  && p.Stock > 0 && (searchText=="" || p.Name.ToLower().Contains(searchText.ToLower())))
+            {
+                bool notInList = MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) == null;
+                bool nameMatch = string.IsNullOrWhiteSpace(searchText) || p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+
+                bool categoryMatch = string.IsNullOrEmpty(SelectedCategory) || SelectedCategory == "Alle" ||
+                                     p.Category.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase);
+                bool priceMatch = !MaxPrice.HasValue || p.Price <= MaxPrice.Value;
+                bool stockMatch = !OnlyInStock || p.Stock > 0;
+
+                if (notInList && nameMatch && categoryMatch && priceMatch && stockMatch)
                     AvailableProducts.Add(p);
+            }
         }
 
         partial void OnGroceryListChanged(GroceryList value)
@@ -53,11 +76,18 @@ namespace Grocery.App.ViewModels
         }
 
         [RelayCommand]
+        public void ApplyFilters()
+        {
+            GetAvailableProducts();
+        }
+
+        [RelayCommand]
         public async Task ChangeColor()
         {
-            Dictionary<string, object> paramater = new() { { nameof(GroceryList), GroceryList } };
-            await Shell.Current.GoToAsync($"{nameof(ChangeColorView)}?Name={GroceryList.Name}", true, paramater);
+            Dictionary<string, object> parameter = new() { { nameof(GroceryList), GroceryList } };
+            await Shell.Current.GoToAsync($"{nameof(ChangeColorView)}?Name={GroceryList.Name}", true, parameter);
         }
+
         [RelayCommand]
         public void AddProduct(Product product)
         {
