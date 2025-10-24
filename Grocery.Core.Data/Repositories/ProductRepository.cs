@@ -8,11 +8,14 @@ namespace Grocery.Core.Data.Repositories
         private readonly List<Product> products;
         public ProductRepository()
         {
-            products = [
-                new Product(1, "Melk", 300, new DateOnly(2025, 9, 25), 0.95m),
-                new Product(2, "Kaas", 100, new DateOnly(2025, 9, 30), 7.98m),
-                new Product(3, "Brood", 400, new DateOnly(2025, 9, 12), 2.19m),
-                new Product(4, "Cornflakes", 0, new DateOnly(2025, 12, 31), 1.48m)];
+
+            products = new List<Product>
+            {
+                new Product(1, "Melk", 300, new DateOnly(2025, 9, 25), 0.95m, "Zuivel"),
+                new Product(2, "Kaas", 100, new DateOnly(2025, 9, 30), 7.98m, "Zuivel"),
+                new Product(3, "Brood", 400, new DateOnly(2025, 9, 12), 2.19m, "Bakkerij"),
+                new Product(4, "Cornflakes", 0, new DateOnly(2025, 12, 31), 1.48m, "Conserven")
+            };
         }
         public List<Product> GetAll()
         {
