@@ -1,0 +1,37 @@
+name: Run NUnit tests
+
+on:
+  pull_request:
+    branches: [ main, release ] 
+  push:
+    branches: [ main, release ] 
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Alleen het testproject restoren
+      - name: Restore Test project only
+        run: dotnet restore TestCore/TestCore.csproj
+
+      - name: Run NUnit tests (TRX + HTML)
+        run: |
+          dotnet test TestCore/TestCore.csproj --no-restore `
+            --logger "trx;LogFileName=TestResult.trx" `
+            --logger "html;LogFileName=TestResult.html" `
+            --results-directory TestResults
+
+      - name: Upload test results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NUnit-TestResults
+          path: TestResults/

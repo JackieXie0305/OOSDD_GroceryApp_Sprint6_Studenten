@@ -1,4 +1,5 @@
 using Grocery.Core.Helpers;
+using Grocery.Core.Models;
 
 namespace TestCore
 {
@@ -42,5 +43,22 @@ namespace TestCore
         {
             Assert.IsFalse(PasswordHelper.VerifyPassword(password, passwordHash));
         }
+        [Test]
+        public void TestFilter_OnlyInStockProductsRemain()
+        {
+            var products = new List<Product>
+    {
+        new Product(1, "Melk", 10, new DateOnly(2025, 10, 15), 1.00m, "Zuivel"),
+        new Product(2, "Kaas", 0,  new DateOnly(2025, 12, 15), 5.00m, "Zuivel"),
+        new Product(3, "Brood", 5,  new DateOnly(2025, 11,  1), 2.00m, "Bakkerij")
+    };
+
+            var filtered = products.Where(p => p.Stock > 0).ToList();
+
+            Assert.That(filtered.All(p => p.Stock > 0), Is.True);
+
+            Assert.That(filtered.Any(p => p.Name == "Kaas"), Is.False);
+        }
+
     }
 }
